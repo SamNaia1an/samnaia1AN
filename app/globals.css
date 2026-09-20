@@ -256,3 +256,110 @@ button { font: inherit; }
   font-size: 8px;
   color: #cc8b31;
 }
+
+/* Deuxième surprise : cadeaux qui tombent + feuilletage rapide du livre */
+.falling-gift {
+  position: absolute;
+  top: -70px;
+  z-index: 2;
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(145deg, #e4ad54, #c97d2d);
+  box-shadow: 0 6px 14px rgba(111, 66, 27, .16);
+  pointer-events: none;
+}
+.falling-gift::before {
+  content: "";
+  position: absolute;
+  left: 43%;
+  top: 0;
+  bottom: 0;
+  width: 14%;
+  background: rgba(255, 242, 212, .9);
+}
+.falling-gift::after {
+  content: "";
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  top: 43%;
+  height: 14%;
+  background: rgba(255, 242, 212, .9);
+}
+
+.book-prop-animated {
+  transform-style: preserve-3d;
+  overflow: visible;
+}
+.book-glow {
+  position: absolute;
+  inset: 6% -4% -5% 3%;
+  z-index: 0;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(245, 214, 145, .74), rgba(245, 214, 145, .16) 48%, transparent 74%);
+  filter: blur(11px);
+  animation: bookGiftPulse 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+.book-prop-animated > img {
+  position: relative;
+  z-index: 2;
+}
+.page-flip-stack {
+  position: absolute;
+  z-index: 5;
+  left: 9%;
+  top: 9%;
+  width: 80%;
+  height: 82%;
+  perspective: 1000px;
+  pointer-events: none;
+}
+.flip-page {
+  position: absolute;
+  inset: 0;
+  transform-origin: 4% 50%;
+  transform-style: preserve-3d;
+  border-radius: 2px 8px 8px 2px;
+  background:
+    linear-gradient(90deg, rgba(214, 188, 148, .26), transparent 8%),
+    linear-gradient(180deg, #fffdf7, #f7ecdc);
+  border: 1px solid rgba(175, 128, 74, .25);
+  box-shadow: 4px 5px 11px rgba(83, 49, 24, .13);
+  backface-visibility: hidden;
+}
+.flip-page i,
+.flip-page b {
+  position: absolute;
+  display: block;
+  left: 15%;
+  right: 12%;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(179, 137, 83, .23);
+}
+.flip-page i { top: 31%; box-shadow: 0 11px 0 rgba(179, 137, 83, .18), 0 22px 0 rgba(179, 137, 83, .13); }
+.flip-page b { top: 67%; width: 47%; }
+.flip-page-2 { inset: 1.2% -1.2% -1.2% 1.2%; }
+.flip-page-3 { inset: 2.4% -2.4% -2.4% 2.4%; }
+.flip-page-4 { inset: 3.6% -3.6% -3.6% 3.6%; }
+.page-flip-shine {
+  position: absolute;
+  z-index: 6;
+  top: 5%;
+  bottom: 5%;
+  width: 28%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 245, 220, .8), transparent);
+  filter: blur(7px);
+  pointer-events: none;
+}
+
+@keyframes bookGiftPulse {
+  50% { opacity: .55; transform: scale(1.05); }
+}
+
+@media (max-width: 760px) {
+  .falling-gift { opacity: .9; }
+  .page-flip-stack { left: 9%; top: 9%; width: 80%; height: 82%; }
+}
