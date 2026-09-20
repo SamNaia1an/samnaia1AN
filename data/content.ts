@@ -9,5 +9,5 @@ Il y aura des surprises, des petits moments à débloquer et, surtout, beaucoup 
 Je t'aime très fort. ♡`;
 
 export const flowerIntroMessage = "Sam t’attend en bas…";
-export const finalFlowerMessage = "Descends, après j’arrive. ♡";
+export const finalFlowerMessage = "Descends… je suis là.";
 export const finalBookMessage = "Alors voilà… maintenant, je vais te donner ton cadeau. ♡";

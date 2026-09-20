@@ -18,25 +18,10 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
           <img src="/assets/sam.png" alt="Sam" />
           <motion.div
             className="book-prop"
-            initial={{ rotateY: -70, scale: 0.65, opacity: 0 }}
-            animate={{
-              rotateY: 0,
-              scale: 1,
-              opacity: 1,
-              y: [0, -10, 0],
-              rotate: [5, 1, 5],
-              x: [0, 2, 0]
-            }}
-            transition={{
-              rotateY: { delay: 0.65, duration: 0.9 },
-              scale: { delay: 0.65, duration: 0.9 },
-              opacity: { delay: 0.65, duration: 0.5 },
-              y: { delay: 1.3, duration: 2.4, repeat: Infinity, ease: "easeInOut" },
-              rotate: { delay: 1.3, duration: 2.4, repeat: Infinity, ease: "easeInOut" },
-              x: { delay: 1.3, duration: 2.4, repeat: Infinity, ease: "easeInOut" }
-            }}
+            initial={{ rotateY: -70, scale: 0.65 }}
+            animate={{ rotateY: 0, scale: 1 }}
+            transition={{ delay: 0.65, duration: 0.9 }}
           >
-            <div className="book-glow" aria-hidden="true" />
             <img src="/assets/book-cover.png" alt="Couverture du livre" />
           </motion.div>
         </motion.div>
