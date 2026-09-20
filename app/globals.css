@@ -257,39 +257,31 @@ button { font: inherit; }
   color: #cc8b31;
 }
 
-/* Deuxième surprise : cadeaux qui tombent + feuilletage rapide du livre */
-.falling-gift {
+/* Deuxième surprise : cadeaux emoji + feuilletage rapide et cliquable */
+.falling-gift-emoji {
   position: absolute;
-  top: -70px;
+  top: -80px;
   z-index: 2;
   display: block;
-  border-radius: 4px;
-  background: linear-gradient(145deg, #e4ad54, #c97d2d);
-  box-shadow: 0 6px 14px rgba(111, 66, 27, .16);
+  line-height: 1;
   pointer-events: none;
-}
-.falling-gift::before {
-  content: "";
-  position: absolute;
-  left: 43%;
-  top: 0;
-  bottom: 0;
-  width: 14%;
-  background: rgba(255, 242, 212, .9);
-}
-.falling-gift::after {
-  content: "";
-  position: absolute;
-  left: -3%;
-  right: -3%;
-  top: 43%;
-  height: 14%;
-  background: rgba(255, 242, 212, .9);
+  user-select: none;
+  will-change: transform;
 }
 
 .book-prop-animated {
   transform-style: preserve-3d;
   overflow: visible;
+}
+.book-interactive {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: initial;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .book-glow {
   position: absolute;
@@ -304,6 +296,7 @@ button { font: inherit; }
 .book-prop-animated > img {
   position: relative;
   z-index: 2;
+  pointer-events: none;
 }
 .page-flip-stack {
   position: absolute;
@@ -312,37 +305,54 @@ button { font: inherit; }
   top: 9%;
   width: 80%;
   height: 82%;
-  perspective: 1000px;
+  perspective: 1200px;
   pointer-events: none;
+  transform-style: preserve-3d;
+}
+.page-flip-stack-realistic {
+  transform: rotate(5deg);
 }
 .flip-page {
   position: absolute;
   inset: 0;
-  transform-origin: 4% 50%;
+  transform-origin: 2.5% 50%;
   transform-style: preserve-3d;
   border-radius: 2px 8px 8px 2px;
   background:
-    linear-gradient(90deg, rgba(214, 188, 148, .26), transparent 8%),
-    linear-gradient(180deg, #fffdf7, #f7ecdc);
-  border: 1px solid rgba(175, 128, 74, .25);
-  box-shadow: 4px 5px 11px rgba(83, 49, 24, .13);
+    linear-gradient(90deg, rgba(195, 160, 117, .27), transparent 9%),
+    linear-gradient(180deg, #fffef9, #f8efdf);
+  border: 1px solid rgba(175, 128, 74, .23);
+  box-shadow: 4px 4px 9px rgba(83, 49, 24, .11);
   backface-visibility: hidden;
+  will-change: transform, opacity;
 }
+.realistic-flip-page {
+  transform-origin: 1.5% 50%;
+}
+.realistic-flip-page:nth-child(2n) { background: linear-gradient(90deg, rgba(195,160,117,.22), transparent 8%), linear-gradient(180deg, #fffdfa, #f6ead8); }
+.realistic-flip-page:nth-child(3n) { background: linear-gradient(90deg, rgba(195,160,117,.18), transparent 8%), linear-gradient(180deg, #fffefb, #f8eee0); }
 .flip-page i,
 .flip-page b {
   position: absolute;
   display: block;
-  left: 15%;
-  right: 12%;
+  left: 14%;
+  right: 11%;
   height: 2px;
   border-radius: 999px;
-  background: rgba(179, 137, 83, .23);
+  background: rgba(179, 137, 83, .22);
 }
-.flip-page i { top: 31%; box-shadow: 0 11px 0 rgba(179, 137, 83, .18), 0 22px 0 rgba(179, 137, 83, .13); }
-.flip-page b { top: 67%; width: 47%; }
-.flip-page-2 { inset: 1.2% -1.2% -1.2% 1.2%; }
-.flip-page-3 { inset: 2.4% -2.4% -2.4% 2.4%; }
-.flip-page-4 { inset: 3.6% -3.6% -3.6% 3.6%; }
+.flip-page i { top: 29%; box-shadow: 0 10px 0 rgba(179,137,83,.17), 0 20px 0 rgba(179,137,83,.13), 0 30px 0 rgba(179,137,83,.1); }
+.flip-page b { top: 69%; width: 48%; }
+.realistic-flip-page-2 { inset: .5% -.5% -.5% .5%; }
+.realistic-flip-page-3 { inset: 1% -1% -1% 1%; }
+.realistic-flip-page-4 { inset: 1.5% -1.5% -1.5% 1.5%; }
+.realistic-flip-page-5 { inset: 2% -2% -2% 2%; }
+.realistic-flip-page-6 { inset: 2.5% -2.5% -2.5% 2.5%; }
+.realistic-flip-page-7 { inset: 3% -3% -3% 3%; }
+.realistic-flip-page-8 { inset: 3.5% -3.5% -3.5% 3.5%; }
+.realistic-flip-page-9 { inset: 4% -4% -4% 4%; }
+.realistic-flip-page-10 { inset: 4.5% -4.5% -4.5% 4.5%; }
+.realistic-flip-page-11 { inset: 5% -5% -5% 5%; }
 .page-flip-shine {
   position: absolute;
   z-index: 6;
@@ -350,7 +360,7 @@ button { font: inherit; }
   bottom: 5%;
   width: 28%;
   border-radius: 50%;
-  background: linear-gradient(90deg, transparent, rgba(255, 245, 220, .8), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 245, 220, .84), transparent);
   filter: blur(7px);
   pointer-events: none;
 }
@@ -360,6 +370,7 @@ button { font: inherit; }
 }
 
 @media (max-width: 760px) {
-  .falling-gift { opacity: .9; }
+  .falling-gift-emoji { opacity: .95; }
   .page-flip-stack { left: 9%; top: 9%; width: 80%; height: 82%; }
 }
+

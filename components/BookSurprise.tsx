@@ -1,27 +1,64 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRef, useState } from "react";
 import { finalBookMessage } from "@/data/content";
 
-const gifts = Array.from({ length: 18 }, (_, i) => ({
+const BOOK_URL = "https://samnaia1an.github.io/livre1an/#page1";
+
+const giftHues = [0, 42, 88, 145, 198, 248, 305, 338];
+const gifts = Array.from({ length: 22 }, (_, i) => ({
   left: `${(i * 17 + 4) % 96}%`,
-  delay: (i % 9) * 0.32,
-  duration: 5.8 + (i % 6) * 0.45,
-  drift: -55 + (i % 10) * 12,
-  size: 18 + (i % 4) * 4,
-  rotate: -18 + (i % 7) * 8
+  delay: (i % 11) * 0.26,
+  duration: 5.3 + (i % 7) * 0.42,
+  drift: -65 + (i % 12) * 12,
+  size: 22 + (i % 5) * 5,
+  rotate: -18 + (i % 7) * 8,
+  hue: giftHues[i % giftHues.length]
 }));
 
-const pages = [0, 1, 2, 3];
+const pages = Array.from({ length: 11 }, (_, i) => i);
 
 export function BookSurprise({ onClose }: { onClose: () => void }) {
+  const [flipKey, setFlipKey] = useState(1);
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function replayFlip() {
+    setFlipKey((value) => value + 1);
+  }
+
+  function handleBookClick() {
+    clickCountRef.current += 1;
+
+    if (clickCountRef.current === 3) {
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+      clickCountRef.current = 0;
+      window.open(BOOK_URL, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      // 1 clic = on rejoue le feuilletage. 2 clics = même effet.
+      replayFlip();
+      clickCountRef.current = 0;
+      clickTimerRef.current = null;
+    }, 460);
+  }
+
   return (
     <div className="surprise-overlay book-mode">
       {gifts.map((gift, i) => (
         <motion.span
           key={i}
-          className="falling-gift"
-          style={{ left: gift.left, width: gift.size, height: gift.size }}
+          className="falling-gift-emoji"
+          style={{
+            left: gift.left,
+            fontSize: gift.size,
+            filter: `hue-rotate(${gift.hue}deg) saturate(1.3) drop-shadow(0 4px 5px rgba(100,60,30,.18))`
+          }}
           initial={{ y: -90, x: 0, rotate: gift.rotate, opacity: 0 }}
           animate={{
             y: "112vh",
@@ -36,7 +73,9 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
             ease: "linear"
           }}
           aria-hidden="true"
-        />
+        >
+          🎁
+        </motion.span>
       ))}
 
       <button className="close-button" onClick={onClose}>×</button>
@@ -51,8 +90,12 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
         >
           <img src="/assets/sam.png" alt="Sam" />
 
-          <motion.div
-            className="book-prop book-prop-animated"
+          <motion.button
+            type="button"
+            className="book-prop book-prop-animated book-interactive"
+            onClick={handleBookClick}
+            aria-label="Feuilleter le livre. Trois clics rapides ouvrent le livre complet."
+            title="Clique pour feuilleter"
             initial={{ rotateY: -70, scale: 0.65, opacity: 0 }}
             animate={{
               rotateY: 0,
@@ -68,24 +111,27 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
               y: { delay: 2.7, duration: 2.8, repeat: Infinity, ease: "easeInOut" },
               rotate: { delay: 2.7, duration: 2.8, repeat: Infinity, ease: "easeInOut" }
             }}
+            whileTap={{ scale: 0.98 }}
           >
             <div className="book-glow" aria-hidden="true" />
             <img src="/assets/book-cover.png" alt="Couverture du livre" />
 
-            <div className="page-flip-stack" aria-hidden="true">
+            <div key={flipKey} className="page-flip-stack page-flip-stack-realistic" aria-hidden="true">
               {pages.map((page, index) => (
                 <motion.span
-                  key={page}
-                  className={`flip-page flip-page-${index + 1}`}
-                  initial={{ rotateY: 0, opacity: 0 }}
+                  key={`${flipKey}-${page}`}
+                  className={`flip-page realistic-flip-page realistic-flip-page-${index + 1}`}
+                  initial={{ rotateY: 0, rotateZ: 0, x: 0, opacity: 0 }}
                   animate={{
-                    rotateY: [0, 0, -168, -168],
-                    opacity: [0, 1, 1, 0]
+                    rotateY: [0, -12, -95, -172, -178],
+                    rotateZ: [0, 0.3, -0.5, -1.2, -1.2],
+                    x: [0, 1, -2, -4, -4],
+                    opacity: [0, 1, 1, 1, 0]
                   }}
                   transition={{
-                    delay: 1.32 + index * 0.18,
-                    duration: 0.72,
-                    times: [0, 0.08, 0.82, 1],
+                    delay: 0.12 + index * 0.055,
+                    duration: 0.54,
+                    times: [0, 0.12, 0.48, 0.88, 1],
                     ease: [0.22, 1, 0.36, 1]
                   }}
                 >
@@ -96,13 +142,14 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
             </div>
 
             <motion.div
+              key={`shine-${flipKey}`}
               className="page-flip-shine"
               initial={{ opacity: 0, x: "-35%" }}
-              animate={{ opacity: [0, 0.8, 0], x: ["-35%", "120%", "120%"] }}
-              transition={{ delay: 1.42, duration: 1.1, ease: "easeOut" }}
+              animate={{ opacity: [0, 0.9, 0], x: ["-35%", "130%", "130%"] }}
+              transition={{ delay: 0.28, duration: 0.95, ease: "easeOut" }}
               aria-hidden="true"
             />
-          </motion.div>
+          </motion.button>
         </motion.div>
 
         <motion.div
