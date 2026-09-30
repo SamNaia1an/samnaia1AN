@@ -17,7 +17,17 @@ const gifts = Array.from({ length: 22 }, (_, i) => ({
   hue: giftHues[i % giftHues.length]
 }));
 
-const pages = Array.from({ length: 11 }, (_, i) => i);
+const pageImages = [
+  "/assets/book-pages/01-novembre.png",
+  "/assets/book-pages/02-decembre.png",
+  "/assets/book-pages/03-janvier.png",
+  "/assets/book-pages/04-fevrier.png",
+  "/assets/book-pages/05-mars-avril.png",
+  "/assets/book-pages/06-mai.png",
+  "/assets/book-pages/07-juin.png",
+  "/assets/book-pages/08-juillet.png",
+  "/assets/book-pages/09-aout.png"
+];
 
 export function BookSurprise({ onClose }: { onClose: () => void }) {
   const [flipKey, setFlipKey] = useState(1);
@@ -41,7 +51,6 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
 
     if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
     clickTimerRef.current = setTimeout(() => {
-      // 1 clic = on rejoue le feuilletage. 2 clics = même effet.
       replayFlip();
       clickCountRef.current = 0;
       clickTimerRef.current = null;
@@ -117,10 +126,10 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
             <img src="/assets/book-cover.png" alt="Couverture du livre" />
 
             <div key={flipKey} className="page-flip-stack page-flip-stack-realistic" aria-hidden="true">
-              {pages.map((page, index) => (
+              {pageImages.map((src, index) => (
                 <motion.span
-                  key={`${flipKey}-${page}`}
-                  className={`flip-page realistic-flip-page realistic-flip-page-${index + 1}`}
+                  key={`${flipKey}-${src}`}
+                  className={`flip-page realistic-flip-page illustrated-flip-page realistic-flip-page-${index + 1}`}
                   initial={{ rotateY: 0, rotateZ: 0, x: 0, opacity: 0 }}
                   animate={{
                     rotateY: [0, -12, -95, -172, -178],
@@ -135,6 +144,7 @@ export function BookSurprise({ onClose }: { onClose: () => void }) {
                     ease: [0.22, 1, 0.36, 1]
                   }}
                 >
+                  <img src={src} alt="" />
                   <i />
                   <b />
                 </motion.span>
