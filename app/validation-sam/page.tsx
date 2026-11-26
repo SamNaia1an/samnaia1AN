@@ -21,11 +21,11 @@ export default function ValidationSam() {
     finally { setBusy(false); }
   }
   return <main style={{ maxWidth: 460, margin: "40px auto", padding: 25, borderRadius: 20, background: "#fff5e9", color: "#805637" }}>
-    <h1>Validation Sam</h1>
+    <h1>Générer le code de la surprise</h1><p><a href="/?sam=1">Retour à ton accès SH</a></p>
     <p>Génère un code à transmettre à Naia si elle choisit de participer. Elle peut continuer sans photo ni code.</p>
     <form onSubmit={e => { e.preventDefault(); if (!busy) void generate(); }}>
       <label>Référence de la demande<input style={field} value={id} onChange={e => { setId(e.target.value); setCode(""); }} required /></label>
-      <label>Clé privée SH ou de validation<input style={field} type="password" value={adminKey} onChange={e => setAdminKey(e.target.value)} required /></label>
+      <label>Ta clé privée SH<input style={field} type="password" value={adminKey} onChange={e => setAdminKey(e.target.value)} required /></label>
       <button disabled={busy} style={{ ...field, cursor: "pointer", color: "white", background: "#9b6746" }} type="submit">{busy ? "Génération…" : "Générer un nouveau code"}</button>
     </form>
     {code && <><p style={{ fontSize: 48, letterSpacing: 10, textAlign: "center", userSelect: "all" }}>{code}</p><p>Valable 10 minutes, une seule utilisation. Transmets-le directement à Naia.</p><button onClick={async () => { try { await navigator.clipboard.writeText(code); setMessage("Code copié."); } catch { setMessage("Sélectionne et copie le code affiché."); } }}>Copier le code</button></>}

@@ -13,6 +13,7 @@ export function PhotoGate({ onComplete }: { onComplete: () => void }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [step, setStep] = useState<"photo" | "request">("photo");
   async function call(body: object) {
     const res = await fetch("/api/photo-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
@@ -20,7 +21,7 @@ export function PhotoGate({ onComplete }: { onComplete: () => void }) {
     return data;
   }
   async function start() {
-    setBusy(true); setMessage(""); setCode(""); setPhoto(null);
+    setBusy(true); setMessage(""); setCode("");
     try { const data = await call({ action: "create" }); setId(data.id); }
     catch (e) { setMessage(e instanceof Error ? e.message : "Réessaie."); }
     finally { setBusy(false); }
@@ -31,39 +32,40 @@ export function PhotoGate({ onComplete }: { onComplete: () => void }) {
     catch (e) { setMessage(e instanceof Error ? e.message : "Réessaie."); }
     finally { setBusy(false); }
   }
-  const whatsapp = id ? `https://wa.me/33638133297?text=${encodeURIComponent(`Coucou ! Voici ma référence pour le code de la surprise : ${id}`)}` : "";
-  return (
-    <section style={panel}>
-      <div style={{ fontSize: 32 }} aria-hidden="true">♡</div>
-      <h1>Encore un petit secret…</h1>
-      <p>Un code à quatre chiffres t’attend si tu veux participer au petit jeu. Le partage de photo est entièrement facultatif.</p>
-      {!id ? <button style={button} disabled={busy} onClick={start}>{busy ? "Un instant…" : "Demander mon code ♡"}</button> : <>
-        <p>Envoie ta référence à Sam pour qu’il puisse te donner ton code. Tu peux joindre une photo si tu en as envie, mais ce n’est pas nécessaire.</p>
-        <p style={{ overflowWrap: "anywhere", fontSize: 13, userSelect: "all" }}>Référence : {id}</p>
-        <a style={button} href={whatsapp} target="_blank" rel="noopener noreferrer">Envoyer ma référence sur WhatsApp</a>
-        <details style={{ margin: "16px 0" }}>
-          <summary>Ajouter une photo (facultatif)</summary>
-          <p>La photo reste sur ton appareil tant que tu ne choisis pas de la partager.</p>
-          <input aria-label="Prendre ou choisir une photo" type="file" accept="image/*" capture="user" onChange={e => setPhoto(e.target.files?.[0] ?? null)} />
-          {photo && <button type="button" style={button} onClick={async () => {
-            try {
-              if (navigator.canShare?.({ files: [photo] })) {
-                await navigator.share({ files: [photo], text: `Référence : ${id}` });
-              } else {
-                setMessage("Tu peux joindre une photo directement dans WhatsApp si tu le souhaites.");
-              }
-            } catch { setMessage("Partage non effectué. Tu peux continuer sans photo."); }
-          }}>Partager la photo (choisir le destinataire)</button>}
-        </details>
+  const requestText = "Coucou ! Peux-tu m’envoyer le code de la surprise ? Référence : " + id;
+  return <section style={panel}>
+    <div style={{ fontSize: 32 }} aria-hidden="true">♡</div>
+    <h1>Encore un petit secret…</h1>
+    {step === "photo" ? <>
+      <p>Si tu en as envie, prends une photo souvenir et partage-la avec Sam.</p>
+      <label style={{ ...button, position: "relative" }}>Prendre une photo ♡
+        <input aria-label="Prendre ou choisir une photo (facultatif)" type="file" accept="image/*" capture="user" style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", cursor: "pointer" }} onChange={e => { setPhoto(e.target.files?.[0] ?? null); setMessage(""); }} />
+      </label>
+      {photo && <><p>Photo choisie. Elle n’est pas envoyée au site.</p><button style={button} onClick={async () => {
+        try {
+          if (navigator.canShare?.({ files: [photo] })) {
+            await navigator.share({ files: [photo] });
+            setMessage("Partage terminé si tu as choisi de l’envoyer.");
+          } else setMessage("Tu peux joindre la photo directement dans ton application de messagerie.");
+        } catch { setMessage("Partage annulé ou indisponible."); }
+      }}>Partager la photo (WhatsApp ou Messages)</button></>}
+      <a style={button} href="https://wa.me/33638133297" target="_blank" rel="noopener noreferrer">Ouvrir la conversation de Sam</a>
+      <button type="button" style={button} onClick={() => { setStep("request"); setPhoto(null); setMessage(""); }}>Demander un code ♡</button>
+    </> : <>
+      <p>Demande ton code à Sam, puis entre ses quatre chiffres.</p>
+      {!id ? <button style={button} disabled={busy} onClick={start}>{busy ? "Un instant…" : "Créer ma demande de code"}</button> : <>
+        <a style={button} href={"https://wa.me/33638133297?text="+encodeURIComponent(requestText)} target="_blank" rel="noopener noreferrer">Demander le code sur WhatsApp</a>
+        <button style={button} type="button" onClick={async () => { try { await navigator.clipboard.writeText(requestText); setMessage("Demande copiée : colle-la dans Messages."); } catch { setMessage("Copie la référence affichée."); } }}>Copier la demande pour Messages</button>
+        <p style={{ overflowWrap: "anywhere", fontSize: 12, userSelect: "all" }}>Référence : {id}</p>
         <form onSubmit={e => { e.preventDefault(); if (!busy && code.length === 4) void verify(); }}>
-          <label htmlFor="gift-code">Ton code à 4 chiffres</label>
-          <input id="gift-code" style={input} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0000" maxLength={4} />
-          <button style={button} disabled={busy || code.length !== 4} type="submit">Valider ♡</button>
+          <label htmlFor="gift-code">Code à 4 chiffres</label>
+          <input id="gift-code" style={input} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0,4))} placeholder="0000" maxLength={4} />
+          <button style={button} disabled={busy || code.length!==4} type="submit">Valider ♡</button>
         </form>
-        <button disabled={busy} type="button" style={{ background: "none", border: 0, color: "inherit", textDecoration: "underline", cursor: "pointer" }} onClick={start}>Nouvelle demande</button>
+        <button style={{ ...button, background:"transparent", color:"#805637" }} disabled={busy} onClick={start}>Nouvelle demande</button>
       </>}
-      {message && <p role="alert">{message}</p>}
-      <button type="button" style={{ ...button, background: "transparent", color: "#805637", border: "1px solid #c99f7c" }} onClick={onComplete}>Continuer sans photo ni code</button>
-    </section>
-  );
+    </>}
+    {message && <p role="status">{message}</p>}
+    <button type="button" style={{ ...button, background:"transparent", color:"#805637", border:"1px solid #c99f7c" }} onClick={onComplete}>Continuer sans photo ni code</button>
+  </section>;
 }
