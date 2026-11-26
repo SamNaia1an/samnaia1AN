@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
+import { grant } from "@/lib/gift-access";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +26,11 @@ export async function POST(request: Request) {
 
     const ok = typeof key === "string" && key.length > 0 && Boolean((expected && sameSecret(key, expected)) || (previewKey && sameSecret(key, previewKey)));
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { ok },
       { status: ok ? 200 : 401, headers: { "Cache-Control": "no-store, max-age=0" } }
     );
+    return ok ? grant(response) : response;
   } catch {
     return NextResponse.json(
       { ok: false },

@@ -19,11 +19,13 @@ function useServerClock() {
       try {
         const res = await fetch("/api/time", { cache: "no-store" });
         const data = await res.json();
-        anchor.current = { server: new Date(data.now).getTime(), local: Date.now() };
+        const server = new Date(data.now).getTime();
+        if (!res.ok || !Number.isFinite(server)) throw new Error("Horloge indisponible");
+        anchor.current = { server, local: Date.now() };
         setNow(new Date(anchor.current.server));
       } catch {
-        anchor.current = { server: Date.now(), local: Date.now() };
-        setNow(new Date());
+        // Preserve the last verified server clock during a transient network failure.
+        if (anchor.current) setNow(new Date(anchor.current.server + (Date.now() - anchor.current.local)));
       }
     };
 

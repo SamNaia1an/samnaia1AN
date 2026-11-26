@@ -2,12 +2,25 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { letterText } from "@/data/content";
+
 
 type Props = { onContinue: () => void };
 
 export function LetterScene({ onContinue }: Props) {
   const [opened, setOpened] = useState(false);
+  const [letterText, setLetterText] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  async function loadLetter(){
+    setLoading(true); setError("");
+    try{
+      const r=await fetch("/api/letter",{cache:"no-store"});
+      const d=await r.json();
+      if(!r.ok || typeof d.letter!=="string")throw new Error(d.error||"La lettre est momentanément indisponible.");
+      setLetterText(d.letter);
+    }catch(e){setError(e instanceof Error?e.message:"Connexion indisponible. Réessaie.");}
+    finally{setLoading(false);}
+  }
 
   return (
     <section className="letter-stage">
@@ -31,7 +44,7 @@ export function LetterScene({ onContinue }: Props) {
         <motion.button
           type="button"
           className={`envelope-clicker ${opened ? "is-opened" : ""}`}
-          onClick={() => setOpened(true)}
+          onClick={() => { setOpened(true); void loadLetter(); }}
           initial={{ scale: 0.72, opacity: 0, y: 70, rotate: -5 }}
           animate={{ scale: 1, opacity: 1, y: 0, rotate: 0 }}
           transition={{ delay: 0.65, type: "spring", stiffness: 110, damping: 14 }}
@@ -75,9 +88,11 @@ export function LetterScene({ onContinue }: Props) {
               transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="letter-kicker">Pour toi, mon amour</div>
-              {letterText.split("\n").map((line, i) => <p key={i}>{line || "\u00A0"}</p>)}
-              <div className="letter-signature">Sam ♡</div>
-              <button className="gold-button compact" onClick={onContinue}>Continuer ♡</button>
+              {loading && <p role="status">Ouverture de la lettre…</p>}
+              {error && <><p className="error-text" role="alert">{error}</p><button className="gold-button compact" onClick={loadLetter}>Réessayer</button></>}
+              {letterText && letterText.split("\n").map((line, i) => <p key={i}>{line || "\u00A0"}</p>)}
+              {letterText && <><div className="letter-signature">Sam ♡</div>
+              <button className="gold-button compact" onClick={onContinue}>Continuer ♡</button></>}
             </motion.article>
           )}
         </AnimatePresence>
