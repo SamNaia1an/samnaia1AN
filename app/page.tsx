@@ -86,7 +86,7 @@ export default function Home() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.6 }}
         >
-          {step === "gate" && <PhotoGate onComplete={() => go("letter")} />}
+          {step === "gate" && <PhotoGate onComplete={() => go("letter")} onOwnerSkip={showSH ? enterOwnerMode : undefined} />}
           {step === "letter" && <LetterScene onContinue={() => go("hub")} />}
           {step === "hub" && <SurpriseHub ownerMode={ownerMode} />}
         </motion.div>

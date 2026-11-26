@@ -4,16 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { recipientName } from "@/data/content";
 
-type Props = { onComplete: () => void };
+type Props = { onComplete: () => void; onOwnerSkip?: () => void };
 
-export function PhotoGate({ onComplete }: Props) {
+export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequest = useRef(0);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "done">("idle");
-  const [shared, setShared] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [codeStep, setCodeStep] = useState(false);
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
@@ -21,17 +22,28 @@ export function PhotoGate({ onComplete }: Props) {
   const [error, setError] = useState("");
   const [shareError, setShareError] = useState("");
 
-  useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+  useEffect(() => () => { cameraRequest.current++; streamRef.current?.getTracks().forEach(t => t.stop()); }, []);
+
+  function continueToCode() {
+    cameraRequest.current++;
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+    setPhoto(null);
+    setCodeStep(true);
+  }
 
   async function openCamera() {
     setError("");
+    setCameraOpen(true);
+    const request = ++cameraRequest.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } },
         audio: false
       });
+      if(request !== cameraRequest.current){stream.getTracks().forEach(t=>t.stop());return;}
       streamRef.current = stream;
-      setCameraOpen(true);
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -39,14 +51,16 @@ export function PhotoGate({ onComplete }: Props) {
         }
       }, 30);
     } catch {
-      setError("La caméra n'a pas pu s'ouvrir. Vérifie l'autorisation dans ton navigateur.");
+      if(request !== cameraRequest.current)return;
+      setError("La caméra n’a pas pu s’ouvrir. Tu peux continuer.");
+      continueToCode();
     }
   }
 
   function takePhoto() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || !video.videoWidth || !video.videoHeight) return;
     const size = Math.min(video.videoWidth || 720, video.videoHeight || 720);
     canvas.width = size;
     canvas.height = size;
@@ -76,7 +90,6 @@ export function PhotoGate({ onComplete }: Props) {
           title: "Photo pour Sam ♡",
           text: "Pour toi ♡"
         });
-        setShared(true);
         return;
       }
 
@@ -89,8 +102,8 @@ export function PhotoGate({ onComplete }: Props) {
       a.remove();
       setShareError("La photo a été enregistrée sur ton appareil. Tu peux la joindre à un message pour Sam si tu le souhaites.");
     } catch (err) {
-      // Si l'utilisateur ferme la feuille de partage, on ne valide pas l'étape.
-      setShareError("Le partage a été annulé ou n’est pas disponible. Tu peux continuer sans envoyer de photo.");
+      // Le partage est volontaire et ne conditionne pas la suite.
+      setShareError("Le partage a été annulé ou n’est pas disponible.");
     }
   }
 
@@ -126,13 +139,15 @@ export function PhotoGate({ onComplete }: Props) {
               <div className="camera-icon">♡</div>
               <h2>Un dernier petit secret…</h2>
               {status === "idle" && <>
-                <p>Demande le code à Sam, puis entre les quatre chiffres.</p>
+                <p>Entre les quatre chiffres du code de la surprise.</p>
                 <a className="gold-button compact" style={{display:"inline-block",textDecoration:"none"}} href={"https://wa.me/33638133297?text="+encodeURIComponent("Coucou ! Peux-tu m’envoyer le code de la surprise ? ♡")} target="_blank" rel="noopener noreferrer">Demander le code à Sam ♡</a>
                 <form onSubmit={e=>{e.preventDefault();if(!busy&&code.length===4)void verifyCode();}} style={{marginTop:18}}>
                   <label htmlFor="gift-code">Code à 4 chiffres</label>
                   <input id="gift-code" value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,4));setCodeError("");}} inputMode="numeric" autoComplete="one-time-code" placeholder="0000" maxLength={4} style={{display:"block",width:"100%",padding:12,border:"1px solid var(--gold-soft)",borderRadius:14,textAlign:"center",letterSpacing:8,fontSize:24,background:"var(--paper-2)",marginTop:8}} />
                   <button className="gold-button" type="submit" disabled={busy||code.length!==4}>Valider ♡</button>
                 </form>
+                <button type="button" onClick={()=>setShowHint(!showHint)} style={{marginTop:12,background:"none",border:0,color:"var(--muted)",textDecoration:"underline",cursor:"pointer"}}>Un indice ?</button>
+                {showHint && <p role="status">Le code du jeu est 2711.</p>}
                 {codeError && <p className="error-text" role="alert">{codeError}</p>}
               </>}
               {status === "checking" && <div className="checking">Vérification en cours…</div>}
@@ -154,12 +169,7 @@ export function PhotoGate({ onComplete }: Props) {
                   <button className="gold-button" onClick={sharePhoto}>Envoyer la photo à Sam ♡</button>
                   <p className="soft-copy" style={{ marginTop: 10 }}>Choisis WhatsApp ou Messages, puis la conversation avec Sam.</p>
                   {shareError && <p className="error-text">{shareError}</p>}
-                  {shareError && !shared && (
-                    <button className="gold-button compact" onClick={() => setShared(true)}>J’ai terminé</button>
-                  )}
-                  {shared && (
-                    <button className="gold-button" onClick={()=>{setPhoto(null);setCodeStep(true);}} style={{ marginTop: 12 }}>Continuer ♡</button>
-                  )}
+                  <button className="gold-button" onClick={continueToCode} style={{ marginTop: 12 }}>Continuer ♡</button>
                 </>
               )}
               {status === "checking" && <div className="checking">Identification en cours…</div>}
@@ -173,7 +183,7 @@ export function PhotoGate({ onComplete }: Props) {
           )}
         </AnimatePresence>
       </motion.div>
-      {status === "idle" && <div style={{marginTop:16}}>{!codeStep && <button type="button" onClick={()=>{streamRef.current?.getTracks().forEach(t=>t.stop());setCameraOpen(false);setPhoto(null);setCodeStep(true);}} style={{color:"var(--muted)",textDecoration:"underline",background:"none",border:0,cursor:"pointer"}}>Continuer sans photo</button>}<button type="button" onClick={()=>{setPhoto(null);setCodeStep(true);validate();}} style={{display:"block",margin:"12px auto",color:"var(--muted)",textDecoration:"underline",background:"none",border:0,cursor:"pointer"}}>Passer le jeu et découvrir la suite</button></div>}
+      {onOwnerSkip && status === "idle" && <button className="gold-button compact" onClick={onOwnerSkip} style={{marginTop:18}}>Passer le jeu et découvrir la suite</button>}
 
       <AnimatePresence>
         {cameraOpen && (
@@ -182,11 +192,12 @@ export function PhotoGate({ onComplete }: Props) {
               <video ref={videoRef} playsInline muted className="camera-video" />
               <div className="camera-actions">
                 <button className="ghost-button" onClick={() => {
+                  cameraRequest.current++;
                   streamRef.current?.getTracks().forEach((t) => t.stop());
                   setCameraOpen(false);
                 }}>Annuler</button>
                 <button className="shutter" onClick={takePhoto} aria-label="Prendre la photo" />
-                <span className="ghost-spacer" />
+                <button className="ghost-button" style={{justifySelf:"end"}} onClick={continueToCode}>Continuer</button>
               </div>
             </motion.div>
           </motion.div>
