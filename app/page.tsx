@@ -1,34 +1,88 @@
 "use client";
 
-import { useState } from "react";
-import type { CSSProperties } from "react";
-const field: CSSProperties = { width: "100%", boxSizing: "border-box", padding: 12, margin: "8px 0 18px", border: "1px solid #b99172", borderRadius: 8, font: "inherit", background: "white", color: "#60462e" };
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AmbientDecor } from "@/components/AmbientDecor";
+import { PhotoGate } from "@/components/PhotoGate";
+import { LetterScene } from "@/components/LetterScene";
+import { SurpriseHub } from "@/components/SurpriseHub";
 
-export default function ValidationSam() {
-  const [id, setId] = useState("");
-  const [adminKey, setAdminKey] = useState("");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  async function generate() {
-    setBusy(true); setMessage(""); setCode("");
-    try {
-      const res = await fetch("/api/photo-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "issue", id: id.trim(), adminKey }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur.");
-      setCode(data.code);
-    } catch (e) { setMessage(e instanceof Error ? e.message : "Réessaie."); }
-    finally { setBusy(false); }
+type Step = "gate" | "letter" | "hub";
+
+export default function Home() {
+  // Naia recommence toujours par l'identification à chaque ouverture/rechargement.
+  const [step, setStep] = useState<Step>("gate");
+  const [ownerMode, setOwnerMode] = useState(false);
+  const [showSH, setShowSH] = useState(false);
+
+  useEffect(() => {
+    const key = new URLSearchParams(window.location.search).get("sh");
+    if (!key) return;
+
+    let cancelled = false;
+
+    fetch("/api/owner-mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ key })
+    })
+      .then(async (res) => {
+        const data = (await res.json()) as { ok?: boolean };
+        if (!cancelled) setShowSH(Boolean(res.ok && data.ok));
+      })
+      .catch(() => {
+        if (!cancelled) setShowSH(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function go(next: Step) {
+    // La progression existe seulement pendant cette visite.
+    setStep(next);
   }
-  return <main style={{ maxWidth: 460, margin: "40px auto", padding: 25, borderRadius: 20, background: "#fff5e9", color: "#805637" }}>
-    <h1>Validation Sam</h1>
-    <p>Génère un code à transmettre à Naia. La photo est facultative.</p>
-    <form onSubmit={e => { e.preventDefault(); if (!busy) void generate(); }}>
-      <label>Référence de la demande<input style={field} value={id} onChange={e => { setId(e.target.value); setCode(""); }} required /></label>
-      <label>Clé privée de validation<input style={field} type="password" value={adminKey} onChange={e => setAdminKey(e.target.value)} required /></label>
-      <button disabled={busy} style={{ ...field, cursor: "pointer", color: "white", background: "#9b6746" }} type="submit">{busy ? "Génération…" : "Générer un nouveau code"}</button>
-    </form>
-    {code && <><p style={{ fontSize: 48, letterSpacing: 10, textAlign: "center", userSelect: "all" }}>{code}</p><p>Valable 10 minutes, une seule utilisation. Transmets-le directement à Naia.</p><button onClick={async () => { try { await navigator.clipboard.writeText(code); setMessage("Code copié."); } catch { setMessage("Sélectionne et copie le code affiché."); } }}>Copier le code</button></>}
-    {message && <p role="status">{message}</p>}
-  </main>;
+
+  function enterOwnerMode() {
+    setOwnerMode(true);
+    setStep("letter");
+  }
+
+  return (
+    <main className="site-shell">
+      <AmbientDecor />
+
+      {showSH && step === "gate" && (
+        <motion.button
+          type="button"
+          className="sh-owner-button"
+          onClick={enterOwnerMode}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 0.72, scale: 1 }}
+          whileHover={{ opacity: 1, scale: 1.08 }}
+          whileTap={{ scale: 0.94 }}
+          aria-label="Entrer en mode Sam"
+        >
+          SH
+        </motion.button>
+      )}
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${step}-${ownerMode ? "sam" : "naia"}`}
+          className="page-layer"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.6 }}
+        >
+          {step === "gate" && <PhotoGate onComplete={() => go("letter")} />}
+          {step === "letter" && <LetterScene onContinue={() => go("hub")} />}
+          {step === "hub" && <SurpriseHub ownerMode={ownerMode} />}
+        </motion.div>
+      </AnimatePresence>
+    </main>
+  );
 }

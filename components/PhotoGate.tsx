@@ -36,7 +36,7 @@ export function PhotoGate({ onComplete }: { onComplete: () => void }) {
     <section style={panel}>
       <div style={{ fontSize: 32 }} aria-hidden="true">♡</div>
       <h1>Encore un petit secret…</h1>
-      <p>Un code à quatre chiffres t’attend pour découvrir la suite.</p>
+      <p>Un code à quatre chiffres t’attend si tu veux participer au petit jeu. Le partage de photo est entièrement facultatif.</p>
       {!id ? <button style={button} disabled={busy} onClick={start}>{busy ? "Un instant…" : "Demander mon code ♡"}</button> : <>
         <p>Envoie ta référence à Sam pour qu’il puisse te donner ton code. Tu peux joindre une photo si tu en as envie, mais ce n’est pas nécessaire.</p>
         <p style={{ overflowWrap: "anywhere", fontSize: 13, userSelect: "all" }}>Référence : {id}</p>
@@ -63,6 +63,7 @@ export function PhotoGate({ onComplete }: { onComplete: () => void }) {
         <button disabled={busy} type="button" style={{ background: "none", border: 0, color: "inherit", textDecoration: "underline", cursor: "pointer" }} onClick={start}>Nouvelle demande</button>
       </>}
       {message && <p role="alert">{message}</p>}
+      <button type="button" style={{ ...button, background: "transparent", color: "#805637", border: "1px solid #c99f7c" }} onClick={onComplete}>Continuer sans photo ni code</button>
     </section>
   );
 }
