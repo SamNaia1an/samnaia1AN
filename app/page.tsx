@@ -15,9 +15,9 @@ export default function Home() {
   const [ownerMode, setOwnerMode] = useState(false);
   const [showSH, setShowSH] = useState(false);
   const [samEntry, setSamEntry] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [keyError, setKeyError] = useState("");
-  const [keyBusy, setKeyBusy] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -59,12 +59,13 @@ export default function Home() {
   return (
     <main className="site-shell">
       <AmbientDecor />
+      {authOpen && step==="gate" && <div className="camera-modal" style={{zIndex:100}}><form className="photo-card" onSubmit={async e=>{e.preventDefault();setKeyError("");try{const r=await fetch("/api/owner-mode",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:keyInput})});if(!r.ok){setKeyError("Clé incorrecte.");return;}setKeyInput("");setAuthOpen(false);setShowSH(true);enterOwnerMode();}catch{setKeyError("Connexion impossible.");}}}><h2>SH</h2><label htmlFor="sh-key">Ta clé privée</label><input id="sh-key" type="password" required value={keyInput} onChange={e=>setKeyInput(e.target.value)} style={{display:"block",width:"100%",border:"1px solid var(--gold-soft)",padding:12,borderRadius:12,background:"var(--paper-2)"}}/><button className="gold-button" type="submit">Entrer ♡</button><button type="button" style={{display:"block",marginTop:12}} onClick={()=>setAuthOpen(false)}>Annuler</button>{keyError && <p className="error-text">{keyError}</p>}</form></div>}
 
       {(showSH || samEntry) && step === "gate" && (
         <motion.button
           type="button"
           className="sh-owner-button"
-          onClick={() => { if (showSH) enterOwnerMode(); else setKeyError("Entre ta clé SH dans le formulaire."); }}
+          onClick={() => showSH ? enterOwnerMode() : setAuthOpen(true)}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 0.72, scale: 1 }}
           whileHover={{ opacity: 1, scale: 1.08 }}
@@ -84,7 +85,6 @@ export default function Home() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.6 }}
         >
-          {step === "gate" && samEntry && !showSH && <form className="soft-copy" style={{ maxWidth: 360, margin: "12px auto", padding: 16 }} onSubmit={async (e) => { e.preventDefault(); setKeyBusy(true); setKeyError(""); try { const r = await fetch("/api/owner-mode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: keyInput }) }); if (!r.ok) { setKeyError("Clé incorrecte."); return; } setKeyInput(""); setShowSH(true); enterOwnerMode(); } catch { setKeyError("Connexion impossible."); } finally { setKeyBusy(false); } }}><label htmlFor="sh-key">Clé privée SH</label><input id="sh-key" type="password" autoComplete="current-password" value={keyInput} onChange={e => setKeyInput(e.target.value)} required style={{ display: "block", width: "100%", padding: 10, margin: "8px 0", background: "white", color: "#60462e", border: "1px solid #c99f7c", borderRadius: 8 }} /><button type="submit" disabled={keyBusy} style={{ padding: 10, background: "#9b6746", color: "white", borderRadius: 8 }}>SH — Ouvrir toutes les surprises</button>{keyError && <p role="alert">{keyError}</p>}<p><a href="/validation-sam">Générer un code</a></p></form>}
           {step === "gate" && <PhotoGate onComplete={() => go("letter")} />}
           {step === "letter" && <LetterScene onContinue={() => go("hub")} />}
           {step === "hub" && <SurpriseHub ownerMode={ownerMode} />}
