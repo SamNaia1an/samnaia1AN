@@ -1,165 +1,68 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-import { recipientName } from "@/data/content";
+import { useState } from "react";
+import type { CSSProperties } from "react";
 
-type Props = { onComplete: () => void };
+const panel: CSSProperties = { maxWidth: 430, margin: "auto", padding: 28, textAlign: "center", background: "#fff5e9", color: "#805637", border: "1px solid #d7b18a", borderRadius: 22, boxShadow: "0 10px 35px #76533922" };
+const button: CSSProperties = { display: "block", width: "100%", boxSizing: "border-box", padding: "13px 12px", borderRadius: 12, border: 0, background: "#9b6746", color: "white", textDecoration: "none", font: "inherit", cursor: "pointer", margin: "12px 0" };
+const input: CSSProperties = { width: "100%", boxSizing: "border-box", padding: 12, border: "1px solid #c99f7c", borderRadius: 10, textAlign: "center", fontSize: 22, letterSpacing: 5, background: "white", color: "#805637" };
 
-export function PhotoGate({ onComplete }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "checking" | "done">("idle");
-  const [shared, setShared] = useState(false);
-  const [error, setError] = useState("");
-  const [shareError, setShareError] = useState("");
-
-  useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
-
-  async function openCamera() {
-    setError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } },
-        audio: false
-      });
-      streamRef.current = stream;
-      setCameraOpen(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          void videoRef.current.play();
-        }
-      }, 30);
-    } catch {
-      setError("La caméra n'a pas pu s'ouvrir. Vérifie l'autorisation dans ton navigateur.");
-    }
+export function PhotoGate({ onComplete }: { onComplete: () => void }) {
+  const [id, setId] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  async function call(body: object) {
+    const res = await fetch("/api/photo-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Une erreur est survenue.");
+    return data;
   }
-
-  function takePhoto() {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    const size = Math.min(video.videoWidth || 720, video.videoHeight || 720);
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const sx = Math.max(0, ((video.videoWidth || size) - size) / 2);
-    const sy = Math.max(0, ((video.videoHeight || size) - size) / 2);
-    ctx.translate(size, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.9));
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    setCameraOpen(false);
+  async function start() {
+    setBusy(true); setMessage(""); setCode(""); setPhoto(null);
+    try { const data = await call({ action: "create" }); setId(data.id); }
+    catch (e) { setMessage(e instanceof Error ? e.message : "Réessaie."); }
+    finally { setBusy(false); }
   }
-
-
-  async function sharePhoto() {
-    if (!photo) return;
-    setShareError("");
-    try {
-      const blob = await (await fetch(photo)).blob();
-      const file = new File([blob], "photo-identification-naia.jpg", { type: "image/jpeg" });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Photo pour Sam ♡",
-          text: "Pour toi ♡"
-        });
-        setShared(true);
-        return;
-      }
-
-      // Repli pour les navigateurs qui ne savent pas partager un fichier directement.
-      const a = document.createElement("a");
-      a.href = photo;
-      a.download = "photo-identification-naia.jpg";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setShareError("Ton navigateur ne peut pas ouvrir directement le partage. La photo a été enregistrée : envoie-la à Sam sur WhatsApp ou Messages, puis appuie sur « J’ai envoyé ».");
-    } catch (err) {
-      // Si l'utilisateur ferme la feuille de partage, on ne valide pas l'étape.
-      setShareError("Le partage n’a pas été terminé. Appuie de nouveau sur le bouton et choisis WhatsApp ou Messages.");
-    }
+  async function verify() {
+    setBusy(true); setMessage("");
+    try { const data = await call({ action: "verify", id, code }); if (data.ok) onComplete(); }
+    catch (e) { setMessage(e instanceof Error ? e.message : "Réessaie."); }
+    finally { setBusy(false); }
   }
-
-  function validate() {
-    setStatus("checking");
-    setTimeout(() => {
-      setStatus("done");
-      setTimeout(onComplete, 1500);
-    }, 1100);
-  }
-
+  const whatsapp = id ? `https://wa.me/33638133297?text=${encodeURIComponent(`Coucou ! Voici ma référence pour le code de la surprise : ${id}`)}` : "";
   return (
-    <motion.section className="center-stage" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="eyebrow">27 novembre ♡</div>
-      <h1 className="display-title">Une dernière petite vérification…</h1>
-      <p className="soft-copy">La photo n’est pas stockée sur le site ; tu pourras l’envoyer à Sam.</p>
-
-      <motion.div className="photo-card" layout>
-        <AnimatePresence mode="wait">
-          {!photo ? (
-            <motion.div key="camera" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="camera-icon">⌁</div>
-              <h2>C'est bien toi ?</h2>
-              <p>Une petite photo et la surprise peut commencer.</p>
-              <button className="gold-button" onClick={openCamera}>M'identifier</button>
-              {error && <p className="error-text">{error}</p>}
-            </motion.div>
-          ) : (
-            <motion.div key="photo" initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-              <img src={photo} alt="Photo prise avec la caméra" className="selfie-preview" />
-              {status === "idle" && (
-                <>
-                  <button className="gold-button" onClick={sharePhoto}>Envoyer la photo à Sam ♡</button>
-                  <p className="soft-copy" style={{ marginTop: 10 }}>Choisis WhatsApp ou Messages, puis la conversation avec Sam.</p>
-                  {shareError && <p className="error-text">{shareError}</p>}
-                  {shareError && !shared && (
-                    <button className="ghost-button" onClick={() => setShared(true)}>J’ai envoyé</button>
-                  )}
-                  {shared && (
-                    <button className="gold-button" onClick={validate} style={{ marginTop: 12 }}>Continuer ♡</button>
-                  )}
-                </>
-              )}
-              {status === "checking" && <div className="checking">Identification en cours…</div>}
-              {status === "done" && (
-                <motion.div className="success" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-                  <span>✓</span>
-                  <strong>Bienvenue, {recipientName} ♡</strong>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      <AnimatePresence>
-        {cameraOpen && (
-          <motion.div className="camera-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="camera-shell" initial={{ y: 20, scale: 0.95 }} animate={{ y: 0, scale: 1 }}>
-              <video ref={videoRef} playsInline muted className="camera-video" />
-              <div className="camera-actions">
-                <button className="ghost-button" onClick={() => {
-                  streamRef.current?.getTracks().forEach((t) => t.stop());
-                  setCameraOpen(false);
-                }}>Annuler</button>
-                <button className="shutter" onClick={takePhoto} aria-label="Prendre la photo" />
-                <span className="ghost-spacer" />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <canvas ref={canvasRef} className="hidden-canvas" />
-    </motion.section>
+    <section style={panel}>
+      <div style={{ fontSize: 32 }} aria-hidden="true">♡</div>
+      <h1>Encore un petit secret…</h1>
+      <p>Un code à quatre chiffres t’attend pour découvrir la suite.</p>
+      {!id ? <button style={button} disabled={busy} onClick={start}>{busy ? "Un instant…" : "Demander mon code ♡"}</button> : <>
+        <p>Envoie ta référence à Sam pour qu’il puisse te donner ton code. Tu peux joindre une photo si tu en as envie, mais ce n’est pas nécessaire.</p>
+        <p style={{ overflowWrap: "anywhere", fontSize: 13, userSelect: "all" }}>Référence : {id}</p>
+        <a style={button} href={whatsapp} target="_blank" rel="noopener noreferrer">Envoyer ma référence sur WhatsApp</a>
+        <details style={{ margin: "16px 0" }}>
+          <summary>Ajouter une photo (facultatif)</summary>
+          <p>La photo reste sur ton appareil tant que tu ne choisis pas de la partager.</p>
+          <input aria-label="Prendre ou choisir une photo" type="file" accept="image/*" capture="user" onChange={e => setPhoto(e.target.files?.[0] ?? null)} />
+          {photo && <button type="button" style={button} onClick={async () => {
+            try {
+              if (navigator.canShare?.({ files: [photo] })) {
+                await navigator.share({ files: [photo], text: `Référence : ${id}` });
+              } else {
+                setMessage("Tu peux joindre une photo directement dans WhatsApp si tu le souhaites.");
+              }
+            } catch { setMessage("Partage non effectué. Tu peux continuer sans photo."); }
+          }}>Partager la photo (choisir le destinataire)</button>}
+        </details>
+        <form onSubmit={e => { e.preventDefault(); if (!busy && code.length === 4) void verify(); }}>
+          <label htmlFor="gift-code">Ton code à 4 chiffres</label>
+          <input id="gift-code" style={input} inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="0000" maxLength={4} />
+          <button style={button} disabled={busy || code.length !== 4} type="submit">Valider ♡</button>
+        </form>
+        <button disabled={busy} type="button" style={{ background: "none", border: 0, color: "inherit", textDecoration: "underline", cursor: "pointer" }} onClick={start}>Nouvelle demande</button>
+      </>}
+      {message && <p role="alert">{message}</p>}
+    </section>
   );
 }
