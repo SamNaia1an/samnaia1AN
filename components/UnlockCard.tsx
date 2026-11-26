@@ -23,6 +23,13 @@ export function UnlockCard({
     minute: "2-digit"
   }).format(target);
 
+  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long"
+  }).format(target);
+  const availabilityLabel = surprise.kind === "book"
+    ? `Disponible le ${dateLabel} à ${timeLabel}`
+    : `Disponible à ${timeLabel}`;
+
   return (
     <motion.button
       className={`unlock-card ${unlocked ? "is-unlocked" : "is-locked"}`}
@@ -42,7 +49,7 @@ export function UnlockCard({
       <div>
         {forceUnlocked && <div className="available-now">Disponible maintenant</div>}
         <h3>{surprise.title}</h3>
-        <p>{unlocked ? surprise.subtitle : `Disponible à ${timeLabel}`}</p>
+        <p>{unlocked ? surprise.subtitle : availabilityLabel}</p>
         {!unlocked && !forceUnlocked && (
           <div className="countdown"><Countdown target={target} now={now} /></div>
         )}
