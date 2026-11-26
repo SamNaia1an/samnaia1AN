@@ -13,6 +13,7 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
   const cameraRequest = useRef(0);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [shareFinished, setShareFinished] = useState(false);
   const [status, setStatus] = useState<"idle" | "checking" | "done">("idle");
   const [showHint, setShowHint] = useState(false);
   const [codeStep, setCodeStep] = useState(false);
@@ -71,6 +72,8 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
     ctx.translate(size, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
+    setShareFinished(false);
+    setShareError("");
     setPhoto(canvas.toDataURL("image/jpeg", 0.9));
     streamRef.current?.getTracks().forEach((t) => t.stop());
     setCameraOpen(false);
@@ -90,6 +93,7 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
           title: "Photo pour Sam ♡",
           text: "Pour toi ♡"
         });
+        setShareFinished(true);
         return;
       }
 
@@ -169,7 +173,7 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
                   <button className="gold-button" onClick={sharePhoto}>Envoyer la photo à Sam ♡</button>
                   <p className="soft-copy" style={{ marginTop: 10 }}>Choisis WhatsApp ou Messages, puis la conversation avec Sam.</p>
                   {shareError && <p className="error-text">{shareError}</p>}
-                  <button className="gold-button" onClick={continueToCode} style={{ marginTop: 12 }}>Continuer ♡</button>
+                  {shareFinished ? <button className="gold-button" onClick={continueToCode} style={{ marginTop: 12 }}>Continuer ♡</button> : <button type="button" onClick={continueToCode} style={{display:"block",margin:"14px auto 0",background:"none",border:0,color:"var(--muted)",textDecoration:"underline",cursor:"pointer"}}>Accéder au code sans partager</button>}
                 </>
               )}
               {status === "checking" && <div className="checking">Identification en cours…</div>}
@@ -191,14 +195,11 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
             <motion.div className="camera-shell" initial={{ y: 20, scale: 0.95 }} animate={{ y: 0, scale: 1 }}>
               <video ref={videoRef} playsInline muted className="camera-video" />
               <div className="camera-actions">
-                <button className="ghost-button" onClick={() => {
-                  cameraRequest.current++;
-                  streamRef.current?.getTracks().forEach((t) => t.stop());
-                  setCameraOpen(false);
-                }}>Annuler</button>
+                <button className="ghost-button" onClick={continueToCode} aria-label="Annuler la photo et accéder au code">Annuler</button>
                 <button className="shutter" onClick={takePhoto} aria-label="Prendre la photo" />
-                <button className="ghost-button" style={{justifySelf:"end"}} onClick={continueToCode}>Continuer</button>
+                <span className="ghost-spacer" />
               </div>
+              <p style={{color:"#fff",textAlign:"center",fontSize:13,margin:"0 12px 14px"}}>Photo facultative : Annuler permet d’accéder au code.</p>
             </motion.div>
           </motion.div>
         )}
