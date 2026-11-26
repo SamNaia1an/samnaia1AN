@@ -14,11 +14,10 @@ export function PhotoGate({ onComplete }: Props) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "done">("idle");
   const [shared, setShared] = useState(false);
-  const [requestId, setRequestId] = useState("");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [codeError, setCodeError] = useState("");
   const [codeStep, setCodeStep] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [shareError, setShareError] = useState("");
 
@@ -88,35 +87,23 @@ export function PhotoGate({ onComplete }: Props) {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setShareError("Ton navigateur ne peut pas ouvrir directement le partage. La photo a été enregistrée : envoie-la à Sam sur WhatsApp ou Messages, puis appuie sur « J’ai envoyé ».");
+      setShareError("La photo a été enregistrée sur ton appareil. Tu peux la joindre à un message pour Sam si tu le souhaites.");
     } catch (err) {
       // Si l'utilisateur ferme la feuille de partage, on ne valide pas l'étape.
-      setShareError("Le partage n’a pas été terminé. Appuie de nouveau sur le bouton et choisis WhatsApp ou Messages.");
+      setShareError("Le partage a été annulé ou n’est pas disponible. Tu peux continuer sans envoyer de photo.");
     }
   }
 
-  async function requestCode() {
-    setCodeStep(true); setBusy(true); setCodeError("");
-    try {
-      const r = await fetch("/api/photo-code", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create"})});
-      const d = await r.json();
-      if(!r.ok) throw new Error(d.error || "Demande indisponible.");
-      setRequestId(d.id);
-    } catch(e) {setCodeError(e instanceof Error ? e.message : "Réessaie.");}
-    finally {setBusy(false);}
-  }
   async function verifyCode() {
     setBusy(true); setCodeError("");
     try {
-      const r=await fetch("/api/photo-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify",id:requestId,code})});
+      const r=await fetch("/api/photo-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
       const d=await r.json();
-      if(!r.ok || !d.ok)throw new Error(d.error || "Code incorrect.");
+      if(!r.ok || !d.ok) throw new Error(d.error || "Code incorrect.");
       validate();
     } catch(e){setCodeError(e instanceof Error ? e.message : "Réessaie.");}
     finally{setBusy(false);}
   }
-  const ownerLink = requestId ? "https://samnaia1an.vercel.app/validation-sam?r="+encodeURIComponent(requestId) : "";
-  const requestMessage = "Coucou, peux-tu me transmettre le code de la surprise ? "+ownerLink;
 
   function validate() {
     setStatus("checking");
@@ -135,30 +122,27 @@ export function PhotoGate({ onComplete }: Props) {
       <motion.div className="photo-card" layout>
         <AnimatePresence mode="wait">
           {codeStep ? (
-            <motion.div key="code" initial={{opacity:0}} animate={{opacity:1}}>
+            <motion.div key="code" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
               <div className="camera-icon">♡</div>
-              <h2>Le petit code secret</h2>
+              <h2>Un dernier petit secret…</h2>
               {status === "idle" && <>
-                <p>Demande ton code à Sam, puis saisis les quatre chiffres.</p>
-                {requestId ? <>
-                  <a className="gold-button" style={{display:"inline-block",textDecoration:"none"}} href={"https://wa.me/33638133297?text="+encodeURIComponent(requestMessage)} target="_blank" rel="noopener noreferrer">Demander le code à Sam ♡</a>
-                  <button className="gold-button compact" onClick={async()=>{try{await navigator.clipboard.writeText(requestMessage);setCodeError("Message copié : colle-le dans ta conversation Messages.");}catch{setCodeError("Utilise le bouton WhatsApp.");}}}>Copier pour Messages</button>
-                  <form onSubmit={e=>{e.preventDefault();if(!busy&&code.length===4)void verifyCode();}} style={{marginTop:20}}>
-                    <label htmlFor="gift-code">Ton code à 4 chiffres</label>
-                    <input id="gift-code" value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,4))} inputMode="numeric" autoComplete="one-time-code" placeholder="0000" maxLength={4} style={{display:"block",width:"100%",padding:12,border:"1px solid var(--gold-soft)",borderRadius:14,textAlign:"center",letterSpacing:8,fontSize:24,background:"var(--paper-2)",marginTop:8}} />
-                    <button className="gold-button" type="submit" disabled={busy||code.length!==4}>Valider ♡</button>
-                  </form>
-                </> : <button className="gold-button" disabled={busy} onClick={requestCode}>{busy?"Un instant…":"Demander mon code ♡"}</button>}
-                {codeError && <p className="error-text" role="status">{codeError}</p>}
+                <p>Demande le code à Sam, puis entre les quatre chiffres.</p>
+                <a className="gold-button compact" style={{display:"inline-block",textDecoration:"none"}} href={"https://wa.me/33638133297?text="+encodeURIComponent("Coucou ! Peux-tu m’envoyer le code de la surprise ? ♡")} target="_blank" rel="noopener noreferrer">Demander le code à Sam ♡</a>
+                <form onSubmit={e=>{e.preventDefault();if(!busy&&code.length===4)void verifyCode();}} style={{marginTop:18}}>
+                  <label htmlFor="gift-code">Code à 4 chiffres</label>
+                  <input id="gift-code" value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,4));setCodeError("");}} inputMode="numeric" autoComplete="one-time-code" placeholder="0000" maxLength={4} style={{display:"block",width:"100%",padding:12,border:"1px solid var(--gold-soft)",borderRadius:14,textAlign:"center",letterSpacing:8,fontSize:24,background:"var(--paper-2)",marginTop:8}} />
+                  <button className="gold-button" type="submit" disabled={busy||code.length!==4}>Valider ♡</button>
+                </form>
+                {codeError && <p className="error-text" role="alert">{codeError}</p>}
               </>}
-              {status === "checking" && <div className="checking">Identification en cours…</div>}
+              {status === "checking" && <div className="checking">Vérification en cours…</div>}
               {status === "done" && <motion.div className="success" initial={{scale:0.7,opacity:0}} animate={{scale:1,opacity:1}}><span>✓</span><strong>Bienvenue, {recipientName} ♡</strong></motion.div>}
             </motion.div>
           ) : !photo ? (
             <motion.div key="camera" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="camera-icon">⌁</div>
               <h2>C'est bien toi ?</h2>
-              <p>Une petite photo et la surprise peut commencer.</p>
+              <p>Une petite photo souvenir, si tu en as envie.</p>
               <button className="gold-button" onClick={openCamera}>M'identifier</button>
               {error && <p className="error-text">{error}</p>}
             </motion.div>
@@ -171,9 +155,11 @@ export function PhotoGate({ onComplete }: Props) {
                   <p className="soft-copy" style={{ marginTop: 10 }}>Choisis WhatsApp ou Messages, puis la conversation avec Sam.</p>
                   {shareError && <p className="error-text">{shareError}</p>}
                   {shareError && !shared && (
-                    <button className="ghost-button" onClick={() => setShared(true)}>J’ai envoyé</button>
+                    <button className="gold-button compact" onClick={() => setShared(true)}>J’ai terminé</button>
                   )}
-                  <button className="gold-button" onClick={requestCode} disabled={busy} style={{ marginTop: 12 }}>Demander le code à Sam ♡</button>
+                  {shared && (
+                    <button className="gold-button" onClick={()=>{setPhoto(null);setCodeStep(true);}} style={{ marginTop: 12 }}>Continuer ♡</button>
+                  )}
                 </>
               )}
               {status === "checking" && <div className="checking">Identification en cours…</div>}
@@ -187,7 +173,7 @@ export function PhotoGate({ onComplete }: Props) {
           )}
         </AnimatePresence>
       </motion.div>
-      {status === "idle" && <div style={{marginTop:14}}>{!codeStep && !photo && <button className="gold-button compact" onClick={requestCode} disabled={busy}>Demander un code sans photo</button>}<button type="button" onClick={()=>{setCodeStep(true);validate();}} style={{display:"block",margin:"14px auto",color:"var(--muted)",textDecoration:"underline",background:"none",border:0,cursor:"pointer"}}>Continuer sans photo ni code</button></div>}
+      {status === "idle" && <div style={{marginTop:16}}>{!codeStep && <button type="button" onClick={()=>{streamRef.current?.getTracks().forEach(t=>t.stop());setCameraOpen(false);setPhoto(null);setCodeStep(true);}} style={{color:"var(--muted)",textDecoration:"underline",background:"none",border:0,cursor:"pointer"}}>Continuer sans photo</button>}<button type="button" onClick={()=>{setPhoto(null);setCodeStep(true);validate();}} style={{display:"block",margin:"12px auto",color:"var(--muted)",textDecoration:"underline",background:"none",border:0,cursor:"pointer"}}>Passer le jeu et découvrir la suite</button></div>}
 
       <AnimatePresence>
         {cameraOpen && (

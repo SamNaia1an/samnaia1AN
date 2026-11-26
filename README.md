@@ -2,13 +2,13 @@
 
 Cette version fonctionne avec **deux accès différents** :
 
-- **Naia** ouvre le lien normal : elle ne voit jamais le bouton `SH`, elle doit faire la vérification photo, puis elle voit les vrais comptes à rebours.
+- **Naia** ouvre le lien normal : elle ne voit jamais le bouton `SH`, elle peut faire la vérification photo, puis elle voit les vrais comptes à rebours.
 - **Sam** ouvre son lien secret : un tout petit bouton `SH` apparaît en bas à droite. En appuyant dessus, la vérification photo est sautée et toutes les surprises sont disponibles immédiatement, sans compte à rebours.
 
 Les vraies heures restent :
 
-- 27 novembre 2026 à **07:35** (Paris)
-- 27 novembre 2026 à **15:00** (Paris)
+- 27 novembre 2026 à **15:45** (Paris)
+- 4 décembre 2026 à **15:00** (Paris)
 
 ## 1. Mettre le dossier sur GitHub
 
@@ -62,7 +62,7 @@ https://sam-naia-surprise.vercel.app
 Elle :
 
 - ne voit pas `SH` ;
-- fait la photo d'identification ;
+- peut prendre une photo facultative ;
 - recommence la vérification à chaque nouvelle ouverture/rechargement ;
 - voit le compte à rebours avant 07:35 et 15:00 ;
 - ne peut ouvrir les cartes qu'au bon moment.
@@ -132,3 +132,5 @@ public/assets/
 ## 8. Important
 
 Le bouton `SH` n'est pas simplement caché en CSS : il n'apparaît qu'après validation de ta clé secrète par le serveur Vercel.
+
+Le code fixe facultatif est configuré dans GIFT_FIXED_CODE sur Vercel. Aucune génération ni stockage des codes n’est nécessaire.
