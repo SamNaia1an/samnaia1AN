@@ -22,7 +22,8 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setSamEntry(params.get("sam") === "1");
-    const key = params.get("sh");
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const key = fragment.get("sh") || params.get("sh");
     if (!key) return;
 
     let cancelled = false;

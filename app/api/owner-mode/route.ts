@@ -14,15 +14,16 @@ export async function POST(request: Request) {
   try {
     const { key } = (await request.json()) as { key?: string };
     const expected = process.env.SAM_OWNER_KEY;
+    const previewKey = process.env.SAM_PREVIEW_LINK_KEY;
 
-    if (!expected) {
+    if (!expected && !previewKey) {
       return NextResponse.json(
         { ok: false, reason: "missing-server-key" },
         { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } }
       );
     }
 
-    const ok = typeof key === "string" && key.length > 0 && sameSecret(key, expected);
+    const ok = typeof key === "string" && key.length > 0 && Boolean((expected && sameSecret(key, expected)) || (previewKey && sameSecret(key, previewKey)));
 
     return NextResponse.json(
       { ok },
