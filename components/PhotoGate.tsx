@@ -132,6 +132,7 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
 
   return (
     <motion.section className="center-stage" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {!codeStep && !cameraOpen && status === "idle" && <button type="button" onClick={continueToCode} style={{position:"absolute",top:"max(12px, env(safe-area-inset-top))",left:"max(12px, env(safe-area-inset-left))",zIndex:10,minHeight:44,padding:"8px 10px",fontSize:14,fontWeight:500,background:"rgba(255,250,241,.95)",border:"1px solid var(--gold-soft)",borderRadius:12,color:"var(--ink)",cursor:"pointer",textDecoration:"underline"}}>Accéder au code sans partager</button>}
       <div className="eyebrow">27 novembre ♡</div>
       <h1 className="display-title">Une dernière petite vérification…</h1>
       <p className="soft-copy">La photo n’est pas stockée sur le site ; tu peux l’envoyer à Sam si tu le souhaites.</p>
@@ -173,7 +174,7 @@ export function PhotoGate({ onComplete, onOwnerSkip }: Props) {
                   <button className="gold-button" onClick={sharePhoto}>Envoyer la photo à Sam ♡</button>
                   <p className="soft-copy" style={{ marginTop: 10 }}>Choisis WhatsApp ou Messages, puis la conversation avec Sam.</p>
                   {shareError && <p className="error-text">{shareError}</p>}
-                  {shareFinished ? <button className="gold-button" onClick={continueToCode} style={{ marginTop: 12 }}>Continuer ♡</button> : <button type="button" onClick={continueToCode} style={{display:"block",margin:"14px auto 0",background:"none",border:0,color:"var(--muted)",textDecoration:"underline",cursor:"pointer"}}>Accéder au code sans partager</button>}
+                  {shareFinished && <button className="gold-button" onClick={continueToCode} style={{ marginTop: 12 }}>Continuer ♡</button>}
                 </>
               )}
               {status === "checking" && <div className="checking">Identification en cours…</div>}
