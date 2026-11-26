@@ -8,8 +8,6 @@ export type Surprise = {
   kind: SurpriseKind;
 };
 
-// 27 novembre 2026, heure de Paris.
-// Le 27 novembre, Paris est à UTC+1.
 export const surprises: Surprise[] = [
   {
     id: "flowers",
