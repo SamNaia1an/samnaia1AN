@@ -20,7 +20,7 @@ export const surprises: Surprise[] = [
     id: "book",
     title: "Ton cadeau",
     subtitle: "Le dernier petit secret de la journée ♡",
-    unlockAt: "2026-12-04T15:00:00+01:00",
+    unlockAt: "2026-12-08T17:00:00+01:00",
     kind: "book"
   }
 ];
