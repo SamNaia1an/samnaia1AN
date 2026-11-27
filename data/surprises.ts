@@ -13,7 +13,7 @@ export const surprises: Surprise[] = [
     id: "flowers",
     title: "Une première surprise…",
     subtitle: "Quelque chose t'attend ♡",
-    unlockAt: "2026-11-27T16:20:00+01:00",
+    unlockAt: "2026-11-27T16:35:00+01:00",
     kind: "flowers"
   },
   {
